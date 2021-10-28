@@ -1,0 +1,76 @@
+DATASETS:
+  CLASS_NAMES: ("Car", "Pedestrian", "Cyclist")
+  TRAIN: ("kitti_train",)
+  TEST: ("kitti_train",)
+  TRAIN_SPLIT: "train"
+  TEST_SPLIT: "val"
+  STYLE: "MonoFlex"
+  USE_RIGHT_IMAGE: False
+  USE_OBJECTS_OUTSIDE: True
+  FILTER_ANNO:
+    ENABLE: True
+INPUT:
+  ORIENT_MODE: 'multi-bin'
+  ORIENT_BIN_SIZE: 4
+  APPROX_3D_CENTER: 'intersect'
+  HEATMAP_ADJUST: True
+  HEATMAP_CENTER: '3D'
+  KEYPOINT_VISIBLE_MODIFY: True
+  FLIP:
+    ENABLE: True
+MODEL:
+  DETECTOR_ARCH: "KeypointDetector"
+  INPLACE_ABN: True
+  REDUCE_LOSS_NORM: True
+  USE_SYNC_BN: True
+  BACKBONE:
+    CONV_BODY: "dla34"
+    USE_DCN: True
+  HEAD:
+    NAME: "MonoFlexHead"
+    REG_HEAD_ITEMS: [["dim_2d"], ["offset_3d"], ["corner_offset"], ["corner_uncertainty"],
+                     ["dim_3d"], ["orient_cls", "orient_ofs"], ["depth"], ["depth_uncertainty"]]
+    REG_HEAD_CHANS: [[4,], [2,], [20,], [3,], [3,], [8, 8,], [1,], [1,]]
+    EDGE_FUSION: True
+    EDGE_FUSION_NORM: "BN"
+    TRUNCATION_OUTPUT_FUSION: "add"
+    TRUNCATION_OFFSET_LOSS: "log"
+    NORM: "BN"
+    NORM_MOMENTUM: 0.1
+    MODIFY_INVALID_KEYPOINT_DEPTH: True
+    OUTPUT_DEPTH: 'soft'
+    CORNER_LOSS_DEPTH: 'soft_combine'
+    LOSS_TYPES: ["PenaltyReducedFocalLoss", "L1", "giou", "L1"]
+    LOSS_NAMES: ['hmp_loss', 'box_loss', 'dep_loss', 'offset_loss', 
+                 'ori_loss', 'dim_loss', 'corner_loss', 'kpt_loss', 
+                 'kpt_dep_loss', 'trunc_offset_loss', 'weight_depth_loss']
+    LOSS_UNCERTAINTY: [True, True, False, True, True, True, 
+                       True, True, False, True, True]
+    LOSS_INIT_WEIGHT: [1.0, 1.0, 1.0, 0.5, 1.0, 1.0, 0.2, 1.0, 0.2, 0.1, 0.2]
+    CENTER_MODE: 'max'
+    HEATMAP_TYPE: 'centernet'
+    DIM_MODE: ['exp', True, False]
+    DIM_WEIGHT: [1, 1, 1]
+    USE_UNCERTAINTY: False
+    UNCERTAINTY_INIT: True
+    DEPTH_MODE: 'inv_sigmoid'
+SOLVER:
+  OPTIMIZER: 'AdamW'
+  BASE_LR: 3e-4
+  WEIGHT_DECAY: 1e-5
+  LR_WARMUP: False
+  WARMUP_EPOCH: 5
+  LR_DECAY: 0.1
+  EVAL_AND_SAVE_EPOCH: True
+  EVAL_EPOCH_INTERVAL: 5
+  SAVE_CHECKPOINT_EPOCH_INTERVAL: 2
+  MAX_EPOCHS: 100
+  DECAY_EPOCH_STEPS: [80, 90]
+  IMS_PER_BATCH: 8
+  EVAL_INTERVAL: 1000
+TEST:
+  UNCERTAINTY_AS_CONFIDENCE: True
+  DETECTIONS_THRESHOLD: 0.2
+  METRIC: ['R40']
+CUDNN_BENCHMARK: True
+OUTPUT_DIR: "./output/exp"

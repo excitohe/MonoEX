@@ -1,0 +1,54 @@
+DATASETS:
+  CLASS_NAMES: ("Car", "Pedestrian", "Cyclist")
+  TRAIN: ("kitti_train",)
+  TEST: ("kitti_train",)
+  TRAIN_SPLIT: "train"
+  TEST_SPLIT: "val"
+  STYLE: "SMOKE"
+  USE_RIGHT_IMAGE: False
+  MAX_OBJECTS: 30
+INPUT:
+  FLIP:
+    ENABLE: True
+    RATIO: 0.5
+  AFFINE:
+    ENABLE: True
+    RATIO: 0.3
+    SHIFT: 0.2
+    SCALE: 0.4
+MODEL:
+  PRETRAIN: False
+  DETECTOR_ARCH: "KeypointDetector"
+  BACKBONE:
+    CONV_BODY: "dla34"
+    NORM: "GN"
+  HEAD:
+    NAME: "SMOKEHead"
+    REG_HEAD_ITEMS: [["depth"], ["offset_3d"], ["dim_3d"], ["ori_3d"]]
+    REG_HEAD_CHANS: [[1,], [2,], [3,], [2,]]
+    NORM: "GN"
+    NORM_MOMENTUM: 0.1
+    LOSS_TYPES: ["PenaltyReducedFocalLoss", "L1"]
+    LOSS_NAMES: ['hmp_loss', 'ori_loss', 'dim_loss', 'loc_loss']
+    LOSS_INIT_WEIGHT: [1.0, 10.0, 10.0, 10.0]
+    DEPTH_MODE: 'linear'
+SOLVER:
+  OPTIMIZER: "Adam"
+  SCHEDULER: "MultiStepLR"
+  BASE_LR: 2.5e-4
+  WEIGHT_DECAY: 1e-5
+  LR_WARMUP: False
+  WARMUP_EPOCH: 5
+  LR_DECAY: 0.1
+  EVAL_AND_SAVE_EPOCH: True
+  EVAL_EPOCH_INTERVAL: 5
+  SAVE_CHECKPOINT_EPOCH_INTERVAL: 5
+  MAX_EPOCHS: 100
+  DECAY_EPOCH_STEPS: [80, 90]
+  IMS_PER_BATCH: 8
+  EVAL_INTERVAL: 1000
+TEST:
+  DETECTIONS_THRESHOLD: 0.25
+  METRIC: ['R40']
+CUDNN_BENCHMARK: True
+OUTPUT_DIR: "./output/exp"
